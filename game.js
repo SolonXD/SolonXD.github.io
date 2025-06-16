@@ -113,23 +113,23 @@ class Game {
         this.levelSettings = {
             'tutorial': {
                 numCities: 4,
-                description: 'Обучение: Соедините все города с минимальной стоимостью'
+                description: 'Обучение: Соедините все города между собой дорогами так, чтобы расстояние между ними было минимальное'
             },
             'easy': {
                 numCities: 5,
-                description: 'Легкий уровень: 5 городов'
+                description: 'Легкий уровень: Соедините 5 городов между собой дорогами так, чтобы расстояние между ними было минимальное'
             },
             'medium': {
                 numCities: 6,
-                description: 'Средний уровень: 6 городов'
+                description: 'Средний уровень: Соедините 6 городов между собой дорогами так, чтобы расстояние между ними было минимальное'
             },
             'hard': {
                 numCities: 8,
-                description: 'Сложный уровень: 8 городов'
+                description: 'Сложный уровень: Соедините 8 городов между собой дорогами так, чтобы расстояние между ними было минимальное'
             },
             'random': {
                 numCities: () => Math.floor(Math.random() * 3) + 6,
-                description: 'Случайный уровень: 6-8 городов'
+                description: 'Случайный уровень: Соедините города между собой дорогами так, чтобы расстояние между ними было минимальное'
             }
         };
         
@@ -206,10 +206,11 @@ class Game {
             
             const numCities = level.numCities();
             
-            
+           
             const gridCols = Math.ceil(Math.sqrt(numCities));
             const gridRows = Math.ceil(numCities / gridCols);
             
+           
             const cellWidth = (this.canvas.width - 100) / (gridCols - 1);
             const cellHeight = (this.canvas.height - 100) / (gridRows - 1);
             
@@ -223,22 +224,37 @@ class Game {
             }
             
             
+            this.edges = [];
+            for (let i = 0; i < numCities; i++) {
+                const row = Math.floor(i / gridCols);
+                const col = i % gridCols;
+                
+                
+                if (col < gridCols - 1 && i + 1 < numCities) {
+                    const weight = Math.floor(Math.random() * 9) + 1;
+                    this.edges.push({ from: i, to: i + 1, weight });
+                }
+                
+                
+                if (row < gridRows - 1 && i + gridCols < numCities) {
+                    const weight = Math.floor(Math.random() * 9) + 1;
+                    this.edges.push({ from: i, to: i + gridCols, weight });
+                }
+                
+                
+                if (col < gridCols - 1 && row < gridRows - 1 && i + gridCols + 1 < numCities && Math.random() < 0.3) {
+                    const weight = Math.floor(Math.random() * 9) + 1;
+                    this.edges.push({ from: i, to: i + gridCols + 1, weight });
+                }
+            }
+            
+            
             let attempts = 0;
-            const maxAttempts = 10;
+            const maxAttempts = 5;
             let validSolution = false;
 
             while (!validSolution && attempts < maxAttempts) {
-                this.edges = [];
-                for (let i = 0; i < this.cities.length; i++) {
-                    for (let j = i + 1; j < this.cities.length; j++) {
-                        const weight = Math.floor(Math.random() * 9) + 1;
-                        this.edges.push({ from: i, to: j, weight });
-                    }
-                }
-
-                
                 this.findOptimalSolution();
-
                 
                 const visited = new Set();
                 const dfs = (city) => {
@@ -257,6 +273,18 @@ class Game {
                     validSolution = visited.size === this.cities.length;
                 }
 
+                if (!validSolution) {
+                    
+                    for (let i = 0; i < 3; i++) {
+                        const from = Math.floor(Math.random() * numCities);
+                        const to = Math.floor(Math.random() * numCities);
+                        if (from !== to) {
+                            const weight = Math.floor(Math.random() * 9) + 1;
+                            this.edges.push({ from, to, weight });
+                        }
+                    }
+                }
+
                 attempts++;
             }
 
@@ -268,15 +296,9 @@ class Game {
             }
         }
         
-        
         document.getElementById('levelDescription').textContent = level.description;
-        
-        
         document.getElementById('continueButton').classList.add('hidden');
-        
-        
         document.getElementById('current-cost').textContent = '0';
-        
         
         if (this.currentLevel === 'tutorial') {
             this.tutorial = new Tutorial(this);
@@ -353,18 +375,18 @@ class Game {
 
         if (cityIndex !== -1) {
             console.log('Клик по городу:', cityIndex);
-            // Если уже есть выбранный город
+            
             if (this.selectedCities.length === 1) {
                 const firstCity = this.selectedCities[0];
                 console.log('Первый выбранный город:', firstCity);
                 
-                // Если кликнули по тому же городу - отменяем выбор
+                
                 if (firstCity === cityIndex) {
                     console.log('Отмена выбора города');
                     this.selectedCities = [];
                     this.highlightedCity = null;
                 } else {
-                    // Проверяем наличие дороги между городами
+                    
                     const edge = this.edges.find(e => 
                         (e.from === firstCity && e.to === cityIndex) || 
                         (e.from === cityIndex && e.to === firstCity)
@@ -380,19 +402,68 @@ class Game {
                     }
                 }
             } else {
-                // Если нет выбранного города, выбираем текущий
+                
                 console.log('Выбираем первый город');
                 this.selectedCities = [cityIndex];
                 this.highlightedCity = cityIndex;
             }
         } else {
-            // Если кликнули не по городу, сбрасываем выбор
+            
             console.log('Клик вне города');
             this.selectedCities = [];
             this.highlightedCity = null;
         }
         
         this.draw();
+    }
+
+    hasCycle(edge) {
+        
+        const graph = [...this.selectedEdges, edge];
+        const visited = new Set();
+        const recursionStack = new Set();
+
+        const dfs = (city, parent) => {
+            visited.add(city);
+            recursionStack.add(city);
+
+            for (const e of graph) {
+                const nextCity = e.from === city ? e.to : e.from;
+                if (e.from === city || e.to === city) {
+                    if (!visited.has(nextCity)) {
+                        if (dfs(nextCity, city)) {
+                            return true;
+                        }
+                    } else if (recursionStack.has(nextCity) && nextCity !== parent) {
+                        return true;
+                    }
+                }
+            }
+
+            recursionStack.delete(city);
+            return false;
+        };
+
+        
+        const citiesInEdge = new Set([edge.from, edge.to]);
+        for (const e of this.selectedEdges) {
+            citiesInEdge.add(e.from);
+            citiesInEdge.add(e.to);
+        }
+
+        
+        if (dfs(edge.from, null)) {
+            return true;
+        }
+
+        
+        if (!visited.has(edge.to)) {
+            if (dfs(edge.to, null)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     toggleEdge(edge) {
@@ -402,6 +473,25 @@ class Game {
         );
         
         if (edgeIndex === -1) {
+            
+            if (this.hasCycle(edge)) {
+                // Создаем уведомление о цикле
+                const notification = document.createElement('div');
+                notification.className = 'cycle-notification';
+                notification.textContent = 'Обнаружен цикл! Это не оптимальное решение.';
+                document.body.appendChild(notification);
+
+                
+                this.highlightCycle(edge);
+
+                
+                setTimeout(() => {
+                    notification.remove();
+                    this.draw(); 
+                }, 3000);
+                return;
+            }
+
             this.selectedEdges.push(edge);
             this.totalCost += edge.weight;
         } else {
@@ -413,6 +503,52 @@ class Game {
         
         if (this.currentLevel === 'tutorial') {
             this.checkTutorialProgress();
+        }
+    }
+
+    highlightCycle(edge) {
+        
+        const tempEdges = [...this.selectedEdges, edge];
+        const visited = new Set();
+        const recursionStack = new Set();
+        const cycleEdges = new Set();
+
+        const dfs = (city, parent) => {
+            visited.add(city);
+            recursionStack.add(city);
+
+            for (const e of tempEdges) {
+                const nextCity = e.from === city ? e.to : e.from;
+                if (e.from === city || e.to === city) {
+                    if (!visited.has(nextCity)) {
+                        if (dfs(nextCity, city)) {
+                            cycleEdges.add(e);
+                            return true;
+                        }
+                    } else if (recursionStack.has(nextCity) && nextCity !== parent) {
+                        cycleEdges.add(e);
+                        return true;
+                    }
+                }
+            }
+
+            recursionStack.delete(city);
+            return false;
+        };
+
+        
+        dfs(edge.from, null);
+
+        
+        this.ctx.strokeStyle = '#ff0000';
+        this.ctx.lineWidth = 4;
+        for (const e of cycleEdges) {
+            const fromCity = this.cities[e.from];
+            const toCity = this.cities[e.to];
+            this.ctx.beginPath();
+            this.ctx.moveTo(fromCity.x, fromCity.y);
+            this.ctx.lineTo(toCity.x, toCity.y);
+            this.ctx.stroke();
         }
     }
 
