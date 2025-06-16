@@ -13,11 +13,6 @@ class Game {
         }
         
         
-        this.canvas.width = 700;
-        this.canvas.height = 500;
-        
-        console.log('Canvas инициализирован:', this.canvas.width, this.canvas.height);
-        
         this.cities = [];
         this.edges = [];
         this.selectedCities = [];
@@ -29,6 +24,15 @@ class Game {
         this.cityRadius = 15;
         this.tutorial = null;
         
+        
+        this.canvas.width = 700;
+        this.canvas.height = 500;
+        
+        
+        window.addEventListener('resize', () => this.updateCanvasSize());
+        this.updateCanvasSize();
+        
+        console.log('Canvas инициализирован:', this.canvas.width, this.canvas.height);
         
         this.fixedCities = {
             'tutorial': [
@@ -113,23 +117,23 @@ class Game {
         this.levelSettings = {
             'tutorial': {
                 numCities: 4,
-                description: 'Обучение: Соедините все города между собой дорогами так, чтобы расстояние между ними было минимальное'
+                description: 'Обучение: Соедините все города с минимальной стоимостью'
             },
             'easy': {
                 numCities: 5,
-                description: 'Легкий уровень: Соедините 5 городов между собой дорогами так, чтобы расстояние между ними было минимальное'
+                description: 'Легкий уровень: 5 городов'
             },
             'medium': {
                 numCities: 6,
-                description: 'Средний уровень: Соедините 6 городов между собой дорогами так, чтобы расстояние между ними было минимальное'
+                description: 'Средний уровень: 6 городов'
             },
             'hard': {
                 numCities: 8,
-                description: 'Сложный уровень: Соедините 8 городов между собой дорогами так, чтобы расстояние между ними было минимальное'
+                description: 'Сложный уровень: 8 городов'
             },
             'random': {
                 numCities: () => Math.floor(Math.random() * 3) + 6,
-                description: 'Случайный уровень: Соедините города между собой дорогами так, чтобы расстояние между ними было минимальное'
+                description: 'Случайный уровень: 6-8 городов'
             }
         };
         
@@ -139,7 +143,10 @@ class Game {
 
     setupEventListeners() {
         this.canvas.addEventListener('click', (e) => this.handleClick(e));
-        document.getElementById('newGame').addEventListener('click', () => this.newGame());
+        document.getElementById('newGame').addEventListener('click', () => {
+            this.updateCanvasSize();
+            this.newGame();
+        });
         document.getElementById('checkSolution').addEventListener('click', () => this.checkSolution());
         document.getElementById('continueButton').addEventListener('click', () => this.nextLevel());
         document.getElementById('backToLevels').addEventListener('click', () => {
@@ -149,27 +156,24 @@ class Game {
     }
 
     setupMenuListeners() {
-
         document.getElementById('startButton').addEventListener('click', () => {
             document.getElementById('mainMenu').classList.add('hidden');
             document.getElementById('levelSelect').classList.remove('hidden');
         });
-        
         document.getElementById('exitButton').addEventListener('click', () => {
             if (confirm('Вы уверены, что хотите выйти?')) {
                 window.close();
             }
         });
-
         document.querySelectorAll('.level-button').forEach(button => {
             button.addEventListener('click', (e) => {
                 this.currentLevel = e.target.dataset.level;
                 document.getElementById('levelSelect').classList.add('hidden');
                 document.getElementById('gameScreen').classList.remove('hidden');
+                this.updateCanvasSize();
                 this.newGame();
             });
         });
-
         document.getElementById('backToMenu').addEventListener('click', () => {
             document.getElementById('levelSelect').classList.add('hidden');
             document.getElementById('mainMenu').classList.remove('hidden');
@@ -196,66 +200,40 @@ class Game {
         const level = this.levelSettings[this.currentLevel];
         
         if (this.currentLevel !== 'random') {
+            // Сохраняем координаты городов как относительные значения
             this.cities = this.fixedCities[this.currentLevel].map(coord => ({
-                x: coord.x,
-                y: coord.y
+                x: coord.x / 700,
+                y: coord.y / 500
             }));
             this.edges = this.fixedEdges[this.currentLevel];
             this.findOptimalSolution();
         } else {
-            
             const numCities = level.numCities();
-            
-           
             const gridCols = Math.ceil(Math.sqrt(numCities));
             const gridRows = Math.ceil(numCities / gridCols);
-            
-           
-            const cellWidth = (this.canvas.width - 100) / (gridCols - 1);
-            const cellHeight = (this.canvas.height - 100) / (gridRows - 1);
-            
-            
+            const marginX = 0.07; // 7% от ширины
+            const marginY = 0.07; // 7% от высоты
+            const cellWidth = (1 - 2 * marginX) / (gridCols - 1);
+            const cellHeight = (1 - 2 * marginY) / (gridRows - 1);
             for (let i = 0; i < numCities; i++) {
                 const row = Math.floor(i / gridCols);
                 const col = i % gridCols;
-                const x = 50 + col * cellWidth;
-                const y = 50 + row * cellHeight;
+                const x = marginX + col * cellWidth;
+                const y = marginY + row * cellHeight;
                 this.cities.push({ x, y });
             }
-            
-            
-            this.edges = [];
-            for (let i = 0; i < numCities; i++) {
-                const row = Math.floor(i / gridCols);
-                const col = i % gridCols;
-                
-                
-                if (col < gridCols - 1 && i + 1 < numCities) {
-                    const weight = Math.floor(Math.random() * 9) + 1;
-                    this.edges.push({ from: i, to: i + 1, weight });
-                }
-                
-                
-                if (row < gridRows - 1 && i + gridCols < numCities) {
-                    const weight = Math.floor(Math.random() * 9) + 1;
-                    this.edges.push({ from: i, to: i + gridCols, weight });
-                }
-                
-                
-                if (col < gridCols - 1 && row < gridRows - 1 && i + gridCols + 1 < numCities && Math.random() < 0.3) {
-                    const weight = Math.floor(Math.random() * 9) + 1;
-                    this.edges.push({ from: i, to: i + gridCols + 1, weight });
-                }
-            }
-            
-            
             let attempts = 0;
-            const maxAttempts = 5;
+            const maxAttempts = 10;
             let validSolution = false;
-
             while (!validSolution && attempts < maxAttempts) {
+                this.edges = [];
+                for (let i = 0; i < this.cities.length; i++) {
+                    for (let j = i + 1; j < this.cities.length; j++) {
+                        const weight = Math.floor(Math.random() * 9) + 1;
+                        this.edges.push({ from: i, to: j, weight });
+                    }
+                }
                 this.findOptimalSolution();
-                
                 const visited = new Set();
                 const dfs = (city) => {
                     visited.add(city);
@@ -267,43 +245,24 @@ class Game {
                         }
                     }
                 };
-
                 if (this.cities.length > 0) {
                     dfs(0);
                     validSolution = visited.size === this.cities.length;
                 }
-
-                if (!validSolution) {
-                    
-                    for (let i = 0; i < 3; i++) {
-                        const from = Math.floor(Math.random() * numCities);
-                        const to = Math.floor(Math.random() * numCities);
-                        if (from !== to) {
-                            const weight = Math.floor(Math.random() * 9) + 1;
-                            this.edges.push({ from, to, weight });
-                        }
-                    }
-                }
-
                 attempts++;
             }
-
             if (!validSolution) {
-                
                 this.currentLevel = 'medium';
                 this.newGame();
                 return;
             }
         }
-        
         document.getElementById('levelDescription').textContent = level.description;
         document.getElementById('continueButton').classList.add('hidden');
         document.getElementById('current-cost').textContent = '0';
-        
         if (this.currentLevel === 'tutorial') {
             this.tutorial = new Tutorial(this);
         }
-        
         this.draw();
     }
 
@@ -356,64 +315,40 @@ class Game {
         const rect = this.canvas.getBoundingClientRect();
         const scaleX = this.canvas.width / rect.width;
         const scaleY = this.canvas.height / rect.height;
-        
         const x = (e.clientX - rect.left) * scaleX;
         const y = (e.clientY - rect.top) * scaleY;
-        
-        console.log('Координаты клика:', x, y);
-        console.log('Размеры canvas:', this.canvas.width, this.canvas.height);
-        console.log('Размеры rect:', rect.width, rect.height);
-        
-        
-        const cityIndex = this.cities.findIndex(city => {
-            const dx = city.x - x;
-            const dy = city.y - y;
+        let clickedCity = null;
+        this.cities.forEach((city, index) => {
+            const absX = city.x * this.canvas.width;
+            const absY = city.y * this.canvas.height;
+            const dx = absX - x;
+            const dy = absY - y;
             const distance = Math.sqrt(dx * dx + dy * dy);
-            console.log('Расстояние до города', this.cities.indexOf(city), ':', distance);
-            return distance <= this.cityRadius * 2;
+            if (distance <= this.cityRadius * 2) {
+                clickedCity = index;
+            }
         });
-
-        if (cityIndex !== -1) {
-            console.log('Клик по городу:', cityIndex);
-            
-            if (this.selectedCities.length === 1) {
-                const firstCity = this.selectedCities[0];
-                console.log('Первый выбранный город:', firstCity);
-                
-                
-                if (firstCity === cityIndex) {
-                    console.log('Отмена выбора города');
-                    this.selectedCities = [];
-                    this.highlightedCity = null;
-                } else {
-                    
-                    const edge = this.edges.find(e => 
-                        (e.from === firstCity && e.to === cityIndex) || 
-                        (e.from === cityIndex && e.to === firstCity)
-                    );
-                    
-                    console.log('Найдено ребро:', edge);
-                    
-                    if (edge) {
-                        console.log('Соединяем города');
-                        this.toggleEdge(edge);
-                        this.selectedCities = [];
-                        this.highlightedCity = null;
-                    }
+        if (clickedCity !== null) {
+            if (this.selectedCities.length === 0) {
+                this.selectedCities = [clickedCity];
+                this.highlightedCity = clickedCity;
+            } else if (this.selectedCities.length === 1 && this.selectedCities[0] !== clickedCity) {
+                const from = this.selectedCities[0];
+                const to = clickedCity;
+                const edge = this.edges.find(e => (e.from === from && e.to === to) || (e.from === to && e.to === from));
+                if (edge) {
+                    this.toggleEdge(edge);
                 }
+                this.selectedCities = [];
+                this.highlightedCity = null;
             } else {
-                
-                console.log('Выбираем первый город');
-                this.selectedCities = [cityIndex];
-                this.highlightedCity = cityIndex;
+                this.selectedCities = [];
+                this.highlightedCity = null;
             }
         } else {
-            
-            console.log('Клик вне города');
             this.selectedCities = [];
             this.highlightedCity = null;
         }
-        
         this.draw();
     }
 
@@ -475,7 +410,7 @@ class Game {
         if (edgeIndex === -1) {
             
             if (this.hasCycle(edge)) {
-                // Создаем уведомление о цикле
+                
                 const notification = document.createElement('div');
                 notification.className = 'cycle-notification';
                 notification.textContent = 'Обнаружен цикл! Это не оптимальное решение.';
@@ -545,9 +480,13 @@ class Game {
         for (const e of cycleEdges) {
             const fromCity = this.cities[e.from];
             const toCity = this.cities[e.to];
+            const fromX = fromCity.x * this.canvas.width;
+            const fromY = fromCity.y * this.canvas.height;
+            const toX = toCity.x * this.canvas.width;
+            const toY = toCity.y * this.canvas.height;
             this.ctx.beginPath();
-            this.ctx.moveTo(fromCity.x, fromCity.y);
-            this.ctx.lineTo(toCity.x, toCity.y);
+            this.ctx.moveTo(fromX, fromY);
+            this.ctx.lineTo(toX, toY);
             this.ctx.stroke();
         }
     }
@@ -621,34 +560,27 @@ class Game {
     }
 
     draw() {
-        
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        
         const selectedCity = this.selectedCities.length === 1 ? this.selectedCities[0] : null;
-        
-     
         this.edges.forEach(edge => {
             const fromCity = this.cities[edge.from];
             const toCity = this.cities[edge.to];
             if (!fromCity || !toCity) return;
-
-            
+            const fromX = fromCity.x * this.canvas.width;
+            const fromY = fromCity.y * this.canvas.height;
+            const toX = toCity.x * this.canvas.width;
+            const toY = toCity.y * this.canvas.height;
             const isSelected = this.selectedEdges.some(e => 
                 (e.from === edge.from && e.to === edge.to) || 
                 (e.from === edge.to && e.to === edge.from)
             );
-
-            
             let highlight = false;
             if (selectedCity !== null && (edge.from === selectedCity || edge.to === selectedCity)) {
                 highlight = true;
             }
-
-            
             this.ctx.beginPath();
-            this.ctx.moveTo(fromCity.x, fromCity.y);
-            this.ctx.lineTo(toCity.x, toCity.y);
+            this.ctx.moveTo(fromX, fromY);
+            this.ctx.lineTo(toX, toY);
             if (isSelected) {
                 this.ctx.strokeStyle = '#4CAF50';
                 this.ctx.lineWidth = 4;
@@ -660,45 +592,59 @@ class Game {
                 this.ctx.lineWidth = 1;
             }
             this.ctx.stroke();
-
-            
             if (selectedCity === null || highlight) {
-                const midX = (fromCity.x + toCity.x) / 2;
-                const midY = (fromCity.y + toCity.y) / 2;
+                const midX = (fromX + toX) / 2;
+                const midY = (fromY + toY) / 2;
                 this.ctx.font = highlight ? 'bold 16px Arial' : '14px Arial';
-                this.ctx.fillStyle = highlight ? '#e53935' : '#333'; // Красный для веса
+                this.ctx.fillStyle = highlight ? '#e53935' : '#333';
                 this.ctx.textAlign = 'center';
                 this.ctx.fillText(edge.weight.toString(), midX, midY);
             }
         });
-        
-        
         this.cities.forEach((city, index) => {
-            
+            const absX = city.x * this.canvas.width;
+            const absY = city.y * this.canvas.height;
             this.ctx.beginPath();
-            this.ctx.arc(city.x, city.y, this.cityRadius * 2, 0, Math.PI * 2);
+            this.ctx.arc(absX, absY, this.cityRadius * 2, 0, Math.PI * 2);
             this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
             this.ctx.fill();
-            
-            
             this.ctx.beginPath();
-            this.ctx.arc(city.x, city.y, this.cityRadius, 0, Math.PI * 2);
+            this.ctx.arc(absX, absY, this.cityRadius, 0, Math.PI * 2);
             this.ctx.fillStyle = this.selectedCities.includes(index) ? '#4CAF50' : '#fff';
             this.ctx.strokeStyle = '#333';
             this.ctx.lineWidth = 2;
             this.ctx.fill();
             this.ctx.stroke();
-            
-            
             this.ctx.fillStyle = '#333';
             this.ctx.font = '14px Arial';
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
-            this.ctx.fillText(index.toString(), city.x, city.y);
+            this.ctx.fillText(index.toString(), absX, absY);
         });
+    }
+
+    updateCanvasSize() {
+        const container = this.canvas.parentElement;
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+
+        
+        this.canvas.width = containerWidth;
+        this.canvas.height = containerHeight;
+
+        
+        const scale = containerWidth / 700;
+        this.cityRadius = Math.max(10, 15 * scale);
+
+        
+        if (this.cities && this.cities.length > 0) {
+            this.draw();
+        }
     }
 }
 
 window.addEventListener('load', () => {
-    new Game();
+    const game = new Game();
+    game.updateCanvasSize();
+    game.newGame();
 }); 
