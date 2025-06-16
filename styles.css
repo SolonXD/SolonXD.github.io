@@ -1,0 +1,251 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f0f0f0;
+}
+
+.hidden {
+    display: none;
+}
+
+.container {
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 800px;
+    width: 100%;
+}
+
+h1 {
+    color: #333;
+    margin-bottom: 1rem;
+    font-size: 1.8rem;
+}
+
+.menu-buttons, .level-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.level-buttons {
+    margin-bottom: 1.5rem;
+}
+
+button {
+    padding: 0.8rem 1.5rem;
+    font-size: 1.1rem;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    min-width: 200px;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+#exitButton {
+    background-color: #f44336;
+}
+
+#exitButton:hover {
+    background-color: #d32f2f;
+}
+
+.back-button {
+    background-color: #2196F3;
+}
+
+.back-button:hover {
+    background-color: #1976D2;
+}
+
+.game-info {
+    margin-bottom: 1rem;
+}
+
+.game-container {
+    position: relative;
+    width: 100%;
+    height: 500px;
+    margin: 20px 0;
+}
+
+#gameCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    border: 2px solid #333;
+    border-radius: 5px;
+}
+
+.controls {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    max-width: 100%;
+}
+
+.controls button {
+    flex: 0 1 auto;
+    min-width: 120px;
+    max-width: 200px;
+}
+
+#checkSolution {
+    background-color: #2196F3;
+}
+
+#checkSolution:hover {
+    background-color: #1976D2;
+}
+
+#continueButton {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+#continueButton:hover {
+    background-color: #45a049;
+}
+
+#continueButton.hidden {
+    display: none;
+}
+
+.tutorial-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.tutorial-container {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 80%;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    pointer-events: auto;
+    z-index: 1001;
+}
+
+.tutorial-message {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 20px;
+    line-height: 1.5;
+    text-align: left;
+    white-space: pre-line;
+}
+
+.tutorial-navigation {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.tutorial-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+    min-width: 120px;
+}
+
+.tutorial-button:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+.tutorial-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.tutorial-button-close {
+    background-color: #dc3545;
+}
+
+.tutorial-button-close:hover:not(:disabled) {
+    background-color: #c82333;
+}
+
+.tutorial-button.hidden {
+    display: none;
+}
+
+[data-city].highlighted {
+    stroke: #ffc107;
+    stroke-width: 3px;
+    animation: pulse 1.5s infinite;
+}
+
+[data-edge].highlighted {
+    stroke: #ffc107;
+    stroke-width: 3px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        stroke-width: 3px;
+    }
+    50% {
+        stroke-width: 5px;
+    }
+    100% {
+        stroke-width: 3px;
+    }
+} 

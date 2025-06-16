@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игра Краскала</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Главное меню -->
+    <div id="mainMenu" class="screen">
+        <div class="container">
+            <h1>Игра Краскала</h1>
+            <div class="menu-buttons">
+                <button id="startButton">Старт</button>
+                <button id="exitButton">Выйти</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Меню выбора уровня -->
+    <div id="levelSelect" class="screen hidden">
+        <div class="container">
+            <h1>Выберите уровень</h1>
+            <div class="level-buttons">
+                <button class="level-button" data-level="tutorial">Обучение (4 города)</button>
+                <button class="level-button" data-level="easy">Уровень 1 (6 городов)</button>
+                <button class="level-button" data-level="medium">Уровень 2 (8 городов)</button>
+                <button class="level-button" data-level="hard">Уровень 3 (12-14 городов)</button>
+                <button class="level-button" data-level="random">Случайный уровень (7-15 городов)</button>
+            </div>
+            <button id="backToMenu" class="back-button">Назад</button>
+        </div>
+    </div>
+
+    <!-- Игровой экран -->
+    <div id="gameScreen" class="screen hidden">
+        <div class="container">
+            <h1>Игра Краскала</h1>
+            <div class="game-info">
+                <p id="levelDescription"></p>
+                <p>Текущая стоимость: <span id="current-cost">0</span></p>
+                <p>Оптимальная стоимость: <span id="optimal-cost">0</span></p>
+            </div>
+            <div class="game-container">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+            <div class="controls">
+                <button id="newGame">Новая игра</button>
+                <button id="checkSolution">Проверить решение</button>
+                <button id="continueButton" class="hidden">Продолжить</button>
+                <button id="backToLevels" class="back-button">К уровням</button>
+            </div>
+        </div>
+    </div>
+    <script src="tutorial.js"></script>
+    <script src="game.js"></script>
+</body>
+</html> 
