@@ -200,19 +200,39 @@ class Game {
         const level = this.levelSettings[this.currentLevel];
         
         if (this.currentLevel !== 'random') {
-            // Сохраняем координаты городов как относительные значения
-            this.cities = this.fixedCities[this.currentLevel].map(coord => ({
-                x: coord.x / 700,
-                y: coord.y / 500
-            }));
-            this.edges = this.fixedEdges[this.currentLevel];
-            this.findOptimalSolution();
+            
+            if (this.currentLevel === 'medium') {
+                this.cities = this.fixedCities['medium'].map(coord => ({
+                    x: coord.x / 700,
+                    y: coord.y / 500
+                }));
+                // Располагаем город 2 в левом нижнем углу и соединяем его только с городами 0 и 5
+                this.cities[2] = { x: 0.1, y: 0.9 }; // Новые координаты для города 2
+                this.edges = [
+                    { from: 0, to: 1, weight: 4 },
+                    { from: 0, to: 2, weight: 6 },
+                    { from: 1, to: 3, weight: 5 },
+                    { from: 2, to: 5, weight: 8 },
+                    { from: 3, to: 4, weight: 5 },
+                    { from: 3, to: 5, weight: 6 },
+                    { from: 4, to: 5, weight: 4 },
+                    { from: 0, to: 3, weight: 7 }
+                ];
+                this.findOptimalSolution();
+            } else {
+                this.cities = this.fixedCities[this.currentLevel].map(coord => ({
+                    x: coord.x / 700,
+                    y: coord.y / 500
+                }));
+                this.edges = this.fixedEdges[this.currentLevel];
+                this.findOptimalSolution();
+            }
         } else {
             const numCities = level.numCities();
             const gridCols = Math.ceil(Math.sqrt(numCities));
             const gridRows = Math.ceil(numCities / gridCols);
-            const marginX = 0.07; // 7% от ширины
-            const marginY = 0.07; // 7% от высоты
+            const marginX = 0.07; 
+            const marginY = 0.07; 
             const cellWidth = (1 - 2 * marginX) / (gridCols - 1);
             const cellHeight = (1 - 2 * marginY) / (gridRows - 1);
             for (let i = 0; i < numCities; i++) {
@@ -222,17 +242,30 @@ class Game {
                 const y = marginY + row * cellHeight;
                 this.cities.push({ x, y });
             }
+            this.edges = [];
+            for (let i = 0; i < numCities; i++) {
+                const row = Math.floor(i / gridCols);
+                const col = i % gridCols;
+                // вправо
+                if (col < gridCols - 1 && i + 1 < numCities) {
+                    const weight = Math.floor(Math.random() * 9) + 1;
+                    this.edges.push({ from: i, to: i + 1, weight });
+                }
+                // вниз
+                if (row < gridRows - 1 && i + gridCols < numCities) {
+                    const weight = Math.floor(Math.random() * 9) + 1;
+                    this.edges.push({ from: i, to: i + gridCols, weight });
+                }
+                // по диагонали (опционально, с вероятностью 30%)
+                if (col < gridCols - 1 && row < gridRows - 1 && i + gridCols + 1 < numCities && Math.random() < 0.3) {
+                    const weight = Math.floor(Math.random() * 9) + 1;
+                    this.edges.push({ from: i, to: i + gridCols + 1, weight });
+                }
+            }
             let attempts = 0;
             const maxAttempts = 10;
             let validSolution = false;
             while (!validSolution && attempts < maxAttempts) {
-                this.edges = [];
-                for (let i = 0; i < this.cities.length; i++) {
-                    for (let j = i + 1; j < this.cities.length; j++) {
-                        const weight = Math.floor(Math.random() * 9) + 1;
-                        this.edges.push({ from: i, to: j, weight });
-                    }
-                }
                 this.findOptimalSolution();
                 const visited = new Set();
                 const dfs = (city) => {
@@ -595,19 +628,41 @@ class Game {
             if (selectedCity === null || highlight) {
                 const midX = (fromX + toX) / 2;
                 const midY = (fromY + toY) / 2;
-                this.ctx.font = highlight ? 'bold 16px Arial' : '14px Arial';
+                // Вычисляем перпендикулярное смещение для текста
+                const dx = toX - fromX;
+                const dy = toY - fromY;
+                const len = Math.sqrt(dx * dx + dy * dy);
+                const offsetX = -dy / len * 15;
+                const offsetY = dx / len * 15;
+                const textX = midX + offsetX;
+                const textY = midY + offsetY;
+                this.ctx.font = highlight ? 'bold 18px Verdana, Arial, sans-serif' : '16px Verdana, Arial, sans-serif';
                 this.ctx.fillStyle = highlight ? '#e53935' : '#333';
                 this.ctx.textAlign = 'center';
-                this.ctx.fillText(edge.weight.toString(), midX, midY);
+                this.ctx.textBaseline = 'middle';
+                this.ctx.shadowColor = 'rgba(0,0,0,0.15)';
+                this.ctx.shadowBlur = 2;
+                this.ctx.fillText(edge.weight.toString(), textX, textY);
+                this.ctx.shadowBlur = 0;
             }
         });
         this.cities.forEach((city, index) => {
             const absX = city.x * this.canvas.width;
             const absY = city.y * this.canvas.height;
+            
             this.ctx.beginPath();
-            this.ctx.arc(absX, absY, this.cityRadius * 2, 0, Math.PI * 2);
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            this.ctx.arc(absX, absY, this.cityRadius * 1.7, 0, Math.PI * 2);
+            this.ctx.fillStyle = 'rgba(33, 150, 243, 0.13)';
             this.ctx.fill();
+            
+            this.ctx.beginPath();
+            this.ctx.arc(absX, absY, this.cityRadius * 1.1, 0, Math.PI * 2);
+            this.ctx.fillStyle = 'rgba(255,255,255,0.95)';
+            this.ctx.strokeStyle = '#2196F3';
+            this.ctx.lineWidth = 3;
+            this.ctx.fill();
+            this.ctx.stroke();
+            
             this.ctx.beginPath();
             this.ctx.arc(absX, absY, this.cityRadius, 0, Math.PI * 2);
             this.ctx.fillStyle = this.selectedCities.includes(index) ? '#4CAF50' : '#fff';
@@ -615,11 +670,15 @@ class Game {
             this.ctx.lineWidth = 2;
             this.ctx.fill();
             this.ctx.stroke();
-            this.ctx.fillStyle = '#333';
-            this.ctx.font = '14px Arial';
+            
+            this.ctx.fillStyle = '#222';
+            this.ctx.font = 'bold 20px Verdana, Arial, sans-serif';
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
+            this.ctx.shadowColor = 'rgba(0,0,0,0.18)';
+            this.ctx.shadowBlur = 3;
             this.ctx.fillText(index.toString(), absX, absY);
+            this.ctx.shadowBlur = 0;
         });
     }
 
